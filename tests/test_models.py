@@ -65,6 +65,7 @@ class TestProduct(TestCase):
     #  T E S T   C A S E S
     ######################################################################
 
+    # PROF's ORIGINAL EXAMPLE
     # def test_example_replace_this(self):
     #     """It should create a Product"""
     #     # Todo: Remove this test case example
@@ -76,7 +77,7 @@ class TestProduct(TestCase):
     #     data = Product.find(resource.id)
     #     self.assertEqual(data.name, resource.name)
 
-    def test_create_account(self):
+    def test_create_product(self):
         """It should create a Product"""
         product = ProductFactory()
         product.create()

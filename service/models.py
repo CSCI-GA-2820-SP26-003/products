@@ -6,6 +6,7 @@ All of the models are stored in this module
 
 import logging
 from flask_sqlalchemy import SQLAlchemy
+from decimal import Decimal, InvalidOperation
 
 logger = logging.getLogger("flask.app")
 
@@ -79,7 +80,7 @@ class Product(db.Model):
             "name": self.name,
             "sku": self.sku,
             "description": self.description,
-            "price": self.price,
+            "price": str(self.price),
             "image_url": self.image_url,
         }
 
@@ -93,9 +94,21 @@ class Product(db.Model):
         try:
             self.name = data["name"]
             self.sku = data["sku"]
-            self.description = data["description"]
-            self.price = data["price"]
-            self.image_url = data["image_url"]
+            self.description = data.get("description")
+            self.image_url = data.get("image_url")
+
+            # price's format issue
+
+            price_val = data.get("price")
+            if price_val is not None:
+                try:
+                    self.price = Decimal(str(price_val))
+                except (InvalidOperation, TypeError) as exc:
+                    raise DataValidationError(
+                        f"Invalid price format: {price_val}"
+                    ) from exc
+            else:
+                raise DataValidationError("Price is required")
 
         except AttributeError as error:
             raise DataValidationError("Invalid attribute: " + error.args[0]) from error
