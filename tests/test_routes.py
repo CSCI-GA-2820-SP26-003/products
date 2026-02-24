@@ -65,7 +65,6 @@ class TestYourResourceService(TestCase):
         """This runs after each test"""
         db.session.remove()
 
-
     ############################################################
     # Utility function to bulk create products
     ############################################################
@@ -84,7 +83,6 @@ class TestYourResourceService(TestCase):
             test_product.id = new_product["id"]
             products.append(test_product)
         return products
-
 
     ######################################################################
     #  P L A C E   T E S T   C A S E S   H E R E
@@ -144,5 +142,27 @@ class TestYourResourceService(TestCase):
         data = response.get_json()
         logging.debug("Response data = %s", data)
         self.assertIn("was not found", data["message"])
+
+    def test_update_product(self):
+        """It should Update a single Product"""
+        # get the id of a product
+        test_product = self._create_products(1)[0]
+        response = self.client.get(f"{BASE_URL}/{test_product.id}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # 3. Modify the data
+        new_product_data = response.get_json()
+        new_product_data["description"] = "Updated Description"  # Change a field
+        original_id = new_product_data["id"]
+        # 4. Send the PUT request to update the product
+        response = self.client.put(
+            f"{BASE_URL}/{test_product.id}",
+            json=new_product_data,
+            content_type="application/json",
+        )
+        # 5. Check
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        updated_product = response.get_json()
+        self.assertEqual(updated_product["id"], original_id)
+        self.assertEqual(updated_product["description"], "Updated Description")
 
     # Todo: Add your test cases here...

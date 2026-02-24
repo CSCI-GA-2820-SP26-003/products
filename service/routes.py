@@ -77,7 +77,6 @@ def create_products():
     )
 
 
-
 ######################################################################
 # READ A PRODUCT
 ######################################################################
@@ -93,12 +92,41 @@ def get_products(product_id):
     # Attempt to find the Product and abort if not found
     product = Product.find(product_id)
     if not product:
-        abort(status.HTTP_404_NOT_FOUND, f"Product with id '{product_id}' was not found.")
+        abort(
+            status.HTTP_404_NOT_FOUND, f"Product with id '{product_id}' was not found."
+        )
 
     app.logger.info("Returning product: %s", product.name)
     return jsonify(product.serialize()), status.HTTP_200_OK
 
 
+######################################################################
+# UPDATE A NEW PRODUCT
+######################################################################
+@app.route("/products/<int:product_id>", methods=["PUT"])
+def update_products(product_id):
+    """
+    Update a single product
+
+    This endpoint will return whether it was successful or not
+    """
+    app.logger.info("Request to Update a product with id [%s]", product_id)
+
+    # Attempt to find the Product and abort if not found
+    product = Product.find(product_id)
+    if not product:
+        abort(
+            status.HTTP_404_NOT_FOUND, f"Product with id '{product_id}' was not found."
+        )
+
+    # Update the Product with the data in the request
+    check_content_type("application/json")
+    data = request.get_json()
+    app.logger.info("Processing: %s", data)
+    product.deserialize(data)
+    product.update()
+    app.logger.info("Product with id [%s] updated!", product.id)
+    return jsonify(product.serialize()), status.HTTP_200_OK
 
 
 # Todo: Place your REST API code here ...
