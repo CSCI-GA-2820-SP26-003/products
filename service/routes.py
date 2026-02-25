@@ -33,10 +33,40 @@ from service.common import status  # HTTP Status Codes
 @app.route("/")
 def index():
     """Root URL response"""
-    return (
-        "Reminder: return some useful information in json format about the service here",
-        status.HTTP_200_OK,
-    )
+    api_details = {
+        "name": "Products REST API Service",
+        "version": "0.1.0",
+        "description": "This is the products service API. Below is how you use it.",
+        "endpoints": [
+            {
+                "method": "POST",
+                "path": "/products",
+                "description": "Creates a new product with the data in the body that is posted",
+            },
+            {
+                "method": "GET",
+                "path": "/products/<product_id>",
+                "description": "Returns a product based on its id",
+            },
+            {
+                "method": "GET",
+                "path": "/products",
+                "description": "Returns a list of all products",
+            },
+            {
+                "method": "PUT",
+                "path": "/products/<product_id>",
+                "description": "Updates a product based on its id with the data in the body that is posted",
+            },
+            {
+                "method": "DELETE",
+                "path": "/products/<product_id>",
+                "description": "Deletes a product based on its id",
+            },
+        ],
+        "status": "online",
+    }
+    return (jsonify(api_details), status.HTTP_200_OK)
 
 
 ######################################################################
