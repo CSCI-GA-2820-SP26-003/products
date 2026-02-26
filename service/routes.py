@@ -160,7 +160,28 @@ def update_products(product_id):
 
 
 # Todo: Place your REST API code here ...
+######################################################################
+# DELETE A PRODUCT
+######################################################################
+@app.route("/products/<int:product_id>", methods=["DELETE"])
+def delete_products(product_id):
+    """
+    Delete a Product
+    This endpoint will delete a Product based on its id
+    """
+    app.logger.info("Request to Delete a product with id [%s]", product_id)
 
+    product = Product.find(product_id)
+    if not product:
+        abort(
+            status.HTTP_404_NOT_FOUND,
+            f"Product with id '{product_id}' was not found."
+        )
+
+    product.delete()
+    app.logger.info("Product with id [%s] deleted!", product.id)
+
+    return "", status.HTTP_204_NO_CONTENT
 
 ######################################################################
 #  U T I L I T Y   F U N C T I O N S
