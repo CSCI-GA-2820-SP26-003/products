@@ -92,3 +92,104 @@ class TestProduct(TestCase):
         self.assertEqual(data.sku, product.sku)
 
     # Todo: Add your test cases here...
+
+    def test_deserialize_missing_name(self):
+        product = Product()
+        with self.assertRaises(Exception):
+            product.deserialize(
+                {
+                    "price": "10.00",
+                    "sku": "123",
+                    "image_url": "url",
+                    "description": "desc",
+                }
+            )
+
+    def test_deserialize_missing_name(self):
+        product = Product()
+        with self.assertRaises(DataValidationError):
+            product.deserialize({"sku": "123", "price": "10.00"})
+
+    def test_deserialize_bad_type(self):
+        product = Product()
+        with self.assertRaises(DataValidationError):
+            product.deserialize(None)
+
+    def test_deserialize_invalid_price(self):
+        product = Product()
+        with self.assertRaises(DataValidationError):
+            product.deserialize(
+                {
+                    "name": "Test",
+                    "sku": "123",
+                    "description": "desc",
+                    "image_url": "url",
+                    "price": "not-a-number",
+                }
+            )
+
+    def test_update_product(self):
+        product = ProductFactory()
+        product.create()
+        product.description = "Updated"
+        product.update()
+        updated = Product.find(product.id)
+        self.assertEqual(updated.description, "Updated")
+
+    def test_delete_product(self):
+        product = ProductFactory()
+        product.create()
+        product.delete()
+        result = Product.find(product.id)
+        self.assertIsNone(result)
+
+    def test_serialize(self):
+        product = ProductFactory()
+        product.create()
+        data = product.serialize()
+        self.assertEqual(data["name"], product.name)
+        self.assertEqual(data["price"], str(product.price))
+
+    def test_find_by_name(self):
+        product = ProductFactory(name="UniqueName")
+        product.create()
+        results = Product.find_by_name("UniqueName").all()
+        self.assertEqual(len(results), 1)
+
+    def test_create_rollback(self):
+        """Force create() exception"""
+        product = Product()
+        product.name = None  # name is nullable=False → 會爆
+        product.sku = "bad"
+        product.price = 10
+
+        with self.assertRaises(DataValidationError):
+            product.create()
+
+    def test_update_rollback(self):
+        """Force update() exception"""
+        product = ProductFactory()
+        product.create()
+        product.name = None  # 破壞 constraint
+
+        with self.assertRaises(DataValidationError):
+            product.update()
+
+    def test_delete_rollback(self):
+        """Force delete() exception properly"""
+        product = ProductFactory()
+        product.create()
+
+        # Monkey patch commit to force failure
+        original_commit = db.session.commit
+
+        def broken_commit():
+            raise Exception("DB failure")
+
+        db.session.commit = broken_commit
+
+        with self.assertRaises(DataValidationError):
+            product.delete()
+
+        # Restore original commit
+        db.session.commit = original_commit

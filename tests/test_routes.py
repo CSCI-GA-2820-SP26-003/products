@@ -166,3 +166,75 @@ class TestYourResourceService(TestCase):
         self.assertEqual(updated_product["description"], "Updated Description")
 
     # Todo: Add your test cases here...
+
+    def test_delete_product(self):
+        """It should Delete a Product"""
+        test_product = self._create_products(1)[0]
+
+        response = self.client.delete(f"{BASE_URL}/{test_product.id}")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        response = self.client.get(f"{BASE_URL}/{test_product.id}")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_product_not_found(self):
+        """It should not Delete a Product that is not found"""
+        response = self.client.delete(f"{BASE_URL}/9999")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        self.assertIn("not found", data["message"])
+
+    def test_list_products(self):
+        """It should list all Products"""
+        self._create_products(3)
+        response = self.client.get(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 3)
+
+    def test_update_product_not_found(self):
+        """It should not update a product that is not found"""
+        response = self.client.put(
+            f"{BASE_URL}/9999",
+            json={"name": "Test"},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_405_handler_json(self):
+        """It should return JSON for 405"""
+        response = self.client.post(f"{BASE_URL}/1")
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        data = response.get_json()
+        self.assertIn("message", data)
+
+    def test_404_handler_json(self):
+        """It should return JSON for 404"""
+        response = self.client.get("/no_route_here")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        self.assertIn("message", data)
+
+    def test_400_bad_request(self):
+        """It should return 415 for bad content type"""
+        response = self.client.post(BASE_URL, data="not json")
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_415_unsupported_media_type(self):
+        """It should return 415 if wrong content type"""
+        response = self.client.post(
+            BASE_URL,
+            json={"name": "Test"},
+            content_type="text/plain",
+        )
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_404_handler_json(self):
+        response = self.client.get("/no_such_route")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn("message", response.get_json())
+
+    def test_405_handler_json(self):
+        response = self.client.post(f"{BASE_URL}/1")
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertIn("message", response.get_json())
