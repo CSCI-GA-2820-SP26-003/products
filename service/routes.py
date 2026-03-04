@@ -137,8 +137,8 @@ def get_products(product_id):
 def update_products(product_id):
     """
     Update a single product
-
-    This endpoint will return whether it was successful or not
+    Returns 200 if the update is successful
+    Returns 400 if no valid fields are provided for update
     """
     app.logger.info("Request to Update a product with id [%s]", product_id)
 
@@ -149,17 +149,43 @@ def update_products(product_id):
             status.HTTP_404_NOT_FOUND, f"Product with id '{product_id}' was not found."
         )
 
-    # Update the Product with the data in the request
+    # Check data in the request
     check_content_type("application/json")
     data = request.get_json()
     app.logger.info("Processing: %s", data)
-    product.deserialize(data)
-    product.update()
-    app.logger.info("Product with id [%s] updated!", product.id)
-    return jsonify(product.serialize()), status.HTTP_200_OK
 
+    # Update the Product with the data in the request
+    allowed_fields = [
+        "name",
+        "description",
+        "price",
+        "sku",
+        "image_url",
+    ]
+    touched = False
 
-# Todo: Place your REST API code here ...
+    try:
+        for key, value in data.items():
+            if key in allowed_fields:
+                setattr(product, key, value)
+                touched = True
+            else:
+                app.logger.warning(
+                    "Attempted to update non-existent or protected field: %s", key
+                )
+    except AttributeError:
+        abort(
+            status.HTTP_400_BAD_REQUEST, "Invalid JSON format: Expected a dictionary."
+        )
+
+    if touched:
+        product.update()
+        app.logger.info("Product with id [%s] updated!", product.id)
+        return jsonify(product.serialize()), status.HTTP_200_OK
+    # If nothing is valid in the request it will break the update and return a 400 error
+    else:
+        app.logger.warning("No valid fields provided for update.")
+        abort(status.HTTP_400_BAD_REQUEST, "No valid fields provided for update.")
 
 
 ######################################################################
