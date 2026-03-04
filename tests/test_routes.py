@@ -165,6 +165,44 @@ class TestYourResourceService(TestCase):
         self.assertEqual(updated_product["id"], original_id)
         self.assertEqual(updated_product["description"], "Updated Description")
 
+    def test_update_product_partial(self):
+        """It should Update only the price of a Product"""
+        test_product = self._create_products(1)[0]
+        # Send ONLY the price
+        new_data = {"price": 150.00}
+        response = self.client.put(
+            f"{BASE_URL}/{test_product.id}",
+            json=new_data,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        updated_product = response.get_json()
+        # Check that price changed but name remained the same
+        self.assertEqual(float(updated_product["price"]), 150.0)
+        self.assertEqual(updated_product["name"], test_product.name)
+
+    def test_update_product_invalid_data(self):
+        """It should return 400 when sending invalid fields"""
+        test_product = self._create_products(1)[0]
+        # Send a field that isn't in your ALLOWED_FIELDS
+        bad_data = {"unknown_field": "some_value"}
+        response = self.client.put(
+            f"{BASE_URL}/{test_product.id}",
+            json=bad_data,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_update_product_malformed_json(self):
+        """It should return 400 for malformed JSON structure"""
+        test_product = self._create_products(1)[0]
+        response = self.client.put(
+            f"{BASE_URL}/{test_product.id}",
+            data="this is just a string, not a dict",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     # Todo: Add your test cases here...
 
     def test_delete_product(self):
