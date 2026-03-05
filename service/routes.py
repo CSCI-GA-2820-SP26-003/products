@@ -220,9 +220,15 @@ def check_content_type(content_type) -> None:
 ######################################################################
 @app.route("/products", methods=["GET"])
 def list_products():
-    """Returns all Products"""
-    products = Product.all()
+    """
+    List all Products
+
+    This endpoint returns a list of products, capped at 50 results
+    """
+    app.logger.info("Request to list Products...")
+    products = Product.query.limit(50).all()
     results = [product.serialize() for product in products]
+    app.logger.info("Returning %d products", len(results))
     return jsonify(results), status.HTTP_200_OK
 
 
