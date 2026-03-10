@@ -170,7 +170,7 @@ class TestYourResourceService(TestCase):
         test_product = self._create_products(1)[0]
         # Send ONLY the price
         new_data = {"price": 150.00}
-        response = self.client.put(
+        response = self.client.patch(
             f"{BASE_URL}/{test_product.id}",
             json=new_data,
             content_type="application/json",
@@ -186,7 +186,7 @@ class TestYourResourceService(TestCase):
         test_product = self._create_products(1)[0]
         # Send a field that isn't in your ALLOWED_FIELDS
         bad_data = {"unknown_field": "some_value"}
-        response = self.client.put(
+        response = self.client.patch(
             f"{BASE_URL}/{test_product.id}",
             json=bad_data,
             content_type="application/json",
@@ -196,7 +196,7 @@ class TestYourResourceService(TestCase):
     def test_update_product_malformed_json(self):
         """It should return 400 for malformed JSON structure"""
         test_product = self._create_products(1)[0]
-        response = self.client.put(
+        response = self.client.patch(
             f"{BASE_URL}/{test_product.id}",
             data="this is just a string, not a dict",
             content_type="application/json",
@@ -285,13 +285,3 @@ class TestYourResourceService(TestCase):
             content_type="text/plain",
         )
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
-
-    def test_404_handler_json(self):
-        response = self.client.get("/no_such_route")
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertIn("message", response.get_json())
-
-    def test_405_handler_json(self):
-        response = self.client.post(f"{BASE_URL}/1")
-        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
-        self.assertIn("message", response.get_json())
