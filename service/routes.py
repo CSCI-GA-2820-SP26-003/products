@@ -97,7 +97,6 @@ def create_products():
     app.logger.info("Product with new id [%s] saved!", product.id)
 
     # Return the location of the new Product
-    # Todo: uncomment this code(just one single line below this) when get_products endpoint is implemented
     location_url = url_for("get_products", product_id=product.id, _external=True)
 
     return (
@@ -209,9 +208,8 @@ def patch_products(product_id):
         app.logger.info("Product with id [%s] updated!", product.id)
         return jsonify(product.serialize()), status.HTTP_200_OK
     # If nothing is valid in the request it will break the update and return a 400 error
-    else:
-        app.logger.warning("No valid fields provided for update.")
-        abort(status.HTTP_400_BAD_REQUEST, "No valid fields provided for update.")
+    app.logger.warning("No valid fields provided for update.")
+    abort(status.HTTP_400_BAD_REQUEST, "No valid fields provided for update.")
 
 
 ######################################################################
