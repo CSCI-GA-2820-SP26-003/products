@@ -115,7 +115,6 @@ class TestYourResourceService(TestCase):
         self.assertEqual(new_product["image_url"], test_product.image_url)
         self.assertEqual(new_product["description"], test_product.description)
 
-        # Todo: Uncomment this code when get_products is implemented
         # Check that the location header was correct
         response = self.client.get(location)
         self.assertEqual(response.status_code, status.HTTP_200_OK)

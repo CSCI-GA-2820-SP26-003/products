@@ -91,9 +91,10 @@ class TestProduct(TestCase):
         self.assertEqual(data.image_url, product.image_url)
         self.assertEqual(data.sku, product.sku)
 
-    # Todo: Add your test cases here...
+    # Add your test cases here...
 
     def test_deserialize_missing_name(self):
+        """Raises an error if missing product name"""
         product = Product()
         with self.assertRaises(Exception):
             product.deserialize(
@@ -105,17 +106,20 @@ class TestProduct(TestCase):
                 }
             )
 
-    def test_deserialize_missing_name(self):
+    def test_deserialize_missing_name2(self):
+        """Raise an error if missing required fields"""
         product = Product()
         with self.assertRaises(DataValidationError):
             product.deserialize({"sku": "123", "price": "10.00"})
 
     def test_deserialize_bad_type(self):
+        """Raises an error if nothing is passed"""
         product = Product()
         with self.assertRaises(DataValidationError):
             product.deserialize(None)
 
     def test_deserialize_invalid_price(self):
+        """Raises an error if price is the wrong datatype"""
         product = Product()
         with self.assertRaises(DataValidationError):
             product.deserialize(
@@ -129,6 +133,7 @@ class TestProduct(TestCase):
             )
 
     def test_update_product(self):
+        """This checks if update is working correctly"""
         product = ProductFactory()
         product.create()
         product.description = "Updated"
@@ -137,6 +142,7 @@ class TestProduct(TestCase):
         self.assertEqual(updated.description, "Updated")
 
     def test_delete_product(self):
+        """This checks if delete is working correctly"""
         product = ProductFactory()
         product.create()
         product.delete()
@@ -144,6 +150,7 @@ class TestProduct(TestCase):
         self.assertIsNone(result)
 
     def test_serialize(self):
+        """This checks if the product is created correctly with the given values"""
         product = ProductFactory()
         product.create()
         data = product.serialize()
@@ -151,6 +158,7 @@ class TestProduct(TestCase):
         self.assertEqual(data["price"], str(product.price))
 
     def test_find_by_name(self):
+        """This checks if find is working correctly"""
         product = ProductFactory(name="UniqueName")
         product.create()
         results = Product.find_by_name("UniqueName").all()
@@ -184,7 +192,8 @@ class TestProduct(TestCase):
         original_commit = db.session.commit
 
         def broken_commit():
-            raise Exception("DB failure")
+            # changed Exception to DataValidationError to pass pylint
+            raise DataValidationError("DB failure")
 
         db.session.commit = broken_commit
 
