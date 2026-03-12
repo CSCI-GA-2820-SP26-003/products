@@ -190,12 +190,23 @@ def check_content_type(content_type) -> None:
 
 
 ######################################################################
-# LIST ALL PRODUCTS
+# LIST ALL PRODUCTS WITH QUERY SUPPORT
 ######################################################################
 @app.route("/products", methods=["GET"])
 def list_products():
-    """Returns all Products"""
-    products = Product.all()
+    """Returns a list of Products"""
+
+    app.logger.info("Request for product list")
+
+    # Get query parameters
+    name = request.args.get("name")
+
+    if name:
+        app.logger.info("Filtering by name: %s", name)
+        products = Product.find_by_name(name).all()
+    else:
+        products = Product.all()
+
     results = [product.serialize() for product in products]
     return jsonify(results), status.HTTP_200_OK
 
