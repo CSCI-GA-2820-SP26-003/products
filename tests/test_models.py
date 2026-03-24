@@ -23,6 +23,7 @@ import os
 import logging
 from unittest import TestCase
 from wsgi import app
+from decimal import Decimal
 from service.models import Product, DataValidationError, db
 from .factories import ProductFactory
 
@@ -202,3 +203,153 @@ class TestProduct(TestCase):
 
         # Restore original commit
         db.session.commit = original_commit
+
+    # ----------------------------------------------------------
+    # TEST NEW FIELDS
+    # ----------------------------------------------------------
+
+    def test_create_product_with_defaults(self):
+        """It should create a Product with default available and category"""
+        product = Product(name="Test", sku="DEFAULT01", price=Decimal("10.00"))
+        product.create()
+        found = Product.find(product.id)
+        self.assertTrue(found.available)
+        self.assertEqual(found.category, "")
+
+    def test_serialize_includes_new_fields(self):
+        """It should include available and category in serialized output"""
+        product = ProductFactory()
+        product.create()
+        data = product.serialize()
+        self.assertIn("available", data)
+        self.assertIn("category", data)
+        self.assertEqual(data["available"], product.available)
+        self.assertEqual(data["category"], product.category)
+
+    def test_deserialize_available_true(self):
+        """It should deserialize available as True"""
+        product = Product()
+        data = {
+            "name": "Test",
+            "sku": "AVAIL01",
+            "price": "25.00",
+            "available": True,
+        }
+        product.deserialize(data)
+        self.assertTrue(product.available)
+
+    def test_deserialize_available_false(self):
+        """It should deserialize available as False"""
+        product = Product()
+        data = {
+            "name": "Test",
+            "sku": "AVAIL02",
+            "price": "25.00",
+            "available": False,
+        }
+        product.deserialize(data)
+        self.assertFalse(product.available)
+
+    def test_deserialize_available_default(self):
+        """It should default available to True when not provided"""
+        product = Product()
+        data = {
+            "name": "Test",
+            "sku": "AVAIL03",
+            "price": "25.00",
+        }
+        product.deserialize(data)
+        self.assertTrue(product.available)
+
+    def test_deserialize_available_bad_type(self):
+        """It should raise error when available is not a boolean"""
+        product = Product()
+        data = {
+            "name": "Test",
+            "sku": "AVAIL04",
+            "price": "25.00",
+            "available": "yes",
+        }
+        with self.assertRaises(DataValidationError):
+            product.deserialize(data)
+
+    def test_deserialize_category(self):
+        """It should deserialize category correctly"""
+        product = Product()
+        data = {
+            "name": "Test",
+            "sku": "CAT01",
+            "price": "25.00",
+            "category": "Electronics",
+        }
+        product.deserialize(data)
+        self.assertEqual(product.category, "Electronics")
+
+    def test_deserialize_category_default(self):
+        """It should default category to empty string when not provided"""
+        product = Product()
+        data = {
+            "name": "Test",
+            "sku": "CAT02",
+            "price": "25.00",
+        }
+        product.deserialize(data)
+        self.assertEqual(product.category, "")
+
+    # ----------------------------------------------------------
+    # TEST QUERY METHODS
+    # ----------------------------------------------------------
+
+    def test_find_by_name_partial_match(self):
+        """It should find Products by partial name (case-insensitive)"""
+        ProductFactory(name="Blue Shirt", sku="SHIRT01").create()
+        ProductFactory(name="Red Shirt", sku="SHIRT02").create()
+        ProductFactory(name="Blue Pants", sku="PANTS01").create()
+        results = Product.find_by_name("shirt").all()
+        self.assertEqual(len(results), 2)
+
+    def test_find_by_name_no_match(self):
+        """It should return empty list when no name matches"""
+        ProductFactory(name="Blue Shirt", sku="NM01").create()
+        results = Product.find_by_name("nonexistent").all()
+        self.assertEqual(len(results), 0)
+
+    def test_find_by_category(self):
+        """It should find Products by category (case-insensitive)"""
+        ProductFactory(name="Item1", sku="CATQ01", category="Clothing").create()
+        ProductFactory(name="Item2", sku="CATQ02", category="Clothing").create()
+        ProductFactory(name="Item3", sku="CATQ03", category="Electronics").create()
+        results = Product.find_by_category("clothing").all()
+        self.assertEqual(len(results), 2)
+
+    def test_find_by_availability_true(self):
+        """It should find only available Products"""
+        ProductFactory(name="A1", sku="AV01", available=True).create()
+        ProductFactory(name="A2", sku="AV02", available=True).create()
+        ProductFactory(name="A3", sku="AV03", available=False).create()
+        results = Product.find_by_availability(True).all()
+        self.assertEqual(len(results), 2)
+
+    def test_find_by_availability_false(self):
+        """It should find only unavailable Products"""
+        ProductFactory(name="A4", sku="AV04", available=True).create()
+        ProductFactory(name="A5", sku="AV05", available=False).create()
+        results = Product.find_by_availability(False).all()
+        self.assertEqual(len(results), 1)
+
+    def test_find_by_price_range(self):
+        """It should find Products within a price range"""
+        ProductFactory(name="P1", sku="PR01", price=Decimal("5.00")).create()
+        ProductFactory(name="P2", sku="PR02", price=Decimal("25.00")).create()
+        ProductFactory(name="P3", sku="PR03", price=Decimal("50.00")).create()
+        ProductFactory(name="P4", sku="PR04", price=Decimal("75.00")).create()
+        results = Product.find_by_price_range(Decimal("10.00"), Decimal("50.00")).all()
+        self.assertEqual(len(results), 2)
+
+    def test_find_by_price_range_no_match(self):
+        """It should return empty when no products in price range"""
+        ProductFactory(name="P5", sku="PR05", price=Decimal("5.00")).create()
+        results = Product.find_by_price_range(
+            Decimal("100.00"), Decimal("200.00")
+        ).all()
+        self.assertEqual(len(results), 0)

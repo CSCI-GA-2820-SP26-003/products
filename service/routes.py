@@ -186,6 +186,8 @@ def patch_products(product_id):
         "price",
         "sku",
         "image_url",
+        "available",
+        "category",
     ]
     touched = False
 

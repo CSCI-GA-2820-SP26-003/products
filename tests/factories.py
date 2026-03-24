@@ -20,5 +20,7 @@ class ProductFactory(factory.Factory):
     description = factory.Faker("paragraph")
     price = factory.Faker("pydecimal", left_digits=4, right_digits=2, positive=True)
     image_url = factory.Faker("image_url")
-
-    # Add your other attributes here...
+    available = factory.Faker("boolean")
+    category = factory.Faker(
+        "random_element", elements=("Electronics", "Clothing", "Food", "Books", "Toys")
+    )
