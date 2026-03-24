@@ -21,9 +21,9 @@ Test cases for Pet Model
 # pylint: disable=duplicate-code
 import os
 import logging
+from decimal import Decimal
 from unittest import TestCase
 from wsgi import app
-from decimal import Decimal
 from service.models import Product, DataValidationError, db
 from .factories import ProductFactory
 
