@@ -18,7 +18,7 @@ class DataValidationError(Exception):
     """Used for an data validation errors when deserializing"""
 
 
-class Product(db.Model):
+class Product(db.Model):  # pylint: disable=too-many-instance-attributes
     """
     Class that represents a Product
     """
@@ -32,6 +32,8 @@ class Product(db.Model):
     description = db.Column(db.Text, nullable=True)
     price = db.Column(db.Numeric(10, 2), nullable=False)
     image_url = db.Column(db.String(255), nullable=True)
+    available = db.Column(db.Boolean, nullable=False, default=True)
+    category = db.Column(db.String(63), nullable=False, default="")
 
     def __repr__(self):
         return f"<Product {self.name} id=[{self.id}]>"
@@ -82,6 +84,8 @@ class Product(db.Model):
             "description": self.description,
             "price": str(self.price),
             "image_url": self.image_url,
+            "available": self.available,
+            "category": self.category,
         }
 
     def deserialize(self, data):
@@ -96,6 +100,18 @@ class Product(db.Model):
             self.sku = data["sku"]
             self.description = data.get("description")
             self.image_url = data.get("image_url")
+            self.category = data.get("category", "")
+
+            # available must be a boolean
+            if "available" in data:
+                if not isinstance(data["available"], bool):
+                    raise DataValidationError(
+                        "Invalid type for boolean [available]: "
+                        + str(type(data["available"]))
+                    )
+                self.available = data["available"]
+            else:
+                self.available = True
 
             # price's format issue
 
@@ -147,4 +163,39 @@ class Product(db.Model):
             name (string): the name of the Products you want to match
         """
         logger.info("Processing name query for %s ...", name)
-        return cls.query.filter(cls.name == name)
+        return cls.query.filter(cls.name.ilike(f"%{name}%"))
+
+    @classmethod
+    def find_by_category(cls, category):
+        """Returns all Products with the given category (exact match, case-insensitive)
+
+        Args:
+            category (string): the category of the Products you want to match
+        """
+        logger.info("Processing category query for %s ...", category)
+        return cls.query.filter(cls.category.ilike(category))
+
+    @classmethod
+    def find_by_availability(cls, available=True):
+        """Returns all Products by their availability
+
+        Args:
+            available (boolean): True for available products, False otherwise
+        """
+        logger.info("Processing availability query for %s ...", available)
+        return cls.query.filter(cls.available == available)
+
+    @classmethod
+    def find_by_price_range(cls, minimum_price, maximum_price):
+        """Returns all Products within the given price range
+
+        Args:
+            minimum_price (Decimal): the minimum price
+            maximum_price (Decimal): the maximum price
+        """
+        logger.info(
+            "Processing price range query for %s to %s ...",
+            minimum_price,
+            maximum_price,
+        )
+        return cls.query.filter(cls.price >= minimum_price, cls.price <= maximum_price)
