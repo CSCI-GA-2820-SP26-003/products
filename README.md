@@ -1,64 +1,69 @@
-# NYU DevOps Project Template
+# Products REST API Service
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/Language-Python-blue.svg)](https://python.org/)
-
-This is a skeleton you can use to start your projects.
-
-**Note:** _Feel free to overwrite this `README.md` file with the one that describes your project._
+[![CI Build](https://github.com/CSCI-GA-2820-SP26-003/products/actions/workflows/ci.yml/badge.svg)](https://github.com/CSCI-GA-2820-SP26-003/products/actions/workflows/ci.yml)
 
 ## Overview
 
-This project template contains starter code for your class project. The `/service` folder contains your `models.py` file for your model and a `routes.py` file for your service. The `/tests` folder has test case starter code for testing the model and the service separately. All you need to do is add your functionality. You can use the [lab-flask-tdd](https://github.com/nyu-devops/lab-flask-tdd) for code examples to copy from.
+This microservice provides a RESTful interface for managing a product catalog. It allows you to Create, Read, List, Update, and Delete product records stored in the underlying database.
 
-## Automatic Setup
+The service is built using the Flask web framework and follows standard REST patterns. It handles JSON payloads and returns appropriate HTTP status codes for all operations.
 
-The best way to use this repo is to start your own repo using it as a git template. To do this just press the green **Use this template** button in GitHub and this will become the source for your repository.
+## API Endpoints
 
-## Manual Setup
+The following endpoints are available. All request bodies must be sent as application/json.
 
-You can also clone this repository and then copy and paste the starter code into your project repo folder on your local computer. Be careful not to copy over your own `README.md` file so be selective in what you copy.
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| **GET** | `/` | Returns API details, version, and available endpoints. |
+| **GET** | `/products` | Returns a list of all products. |
+| **POST** | `/products` | Creates a new product with the provided JSON data. |
+| **GET** | `/products/<id>` | Returns a single product based on its ID. |
+| **PUT** | `/products/<id>` | Updates a product's data based on its ID. |
+| **DELETE** | `/products/<id>` | Deletes a product from the database. |
 
-There are 4 hidden files that you will need to copy manually if you use the Mac Finder or Windows Explorer to copy files from this folder into your repo folder.
+## Usage Examples (CLI)
 
-These should be copied using a bash shell as follows:
+### 1. Create a Product
+
+**POST** `/products`
 
 ```bash
-    cp .gitignore  ../<your_repo_folder>/
-    cp .flaskenv ../<your_repo_folder>/
-    cp .gitattributes ../<your_repo_folder>/
+curl -X POST http://localhost:8080/products \
+     -H "Content-Type: application/json" \
+     -d '{
+          "name": "My Amazing Product",
+          "sku": "CAT-001",
+          "description": "Tell us how wonderful your product is!",
+          "price": 99.99,
+          "image_url": "example.com/assets/image-of-your-product.jpg"
+         }'
 ```
 
-## Contents
+### 2. List Products
 
-The project contains the following:
+**GET** `/products`
 
-```text
-.gitignore          - this will ignore vagrant and other metadata files
-.flaskenv           - Environment variables to configure Flask
-.gitattributes      - File to gix Windows CRLF issues
-.devcontainers/     - Folder with support for VSCode Remote Containers
-dot-env-example     - copy to .env to use environment variables
-pyproject.toml      - Poetry list of Python libraries required by your code
+`curl -X GET http://localhost:8080/products`
 
-service/                   - service python package
-├── __init__.py            - package initializer
-├── config.py              - configuration parameters
-├── models.py              - module with business models
-├── routes.py              - module with service routes
-└── common                 - common code package
-    ├── cli_commands.py    - Flask command to recreate all tables
-    ├── error_handlers.py  - HTTP error handling code
-    ├── log_handlers.py    - logging setup code
-    └── status.py          - HTTP status constants
+### 3. Get a Product
 
-tests/                     - test cases package
-├── __init__.py            - package initializer
-├── factories.py           - Factory for testing with fake objects
-├── test_cli_commands.py   - test suite for the CLI
-├── test_models.py         - test suite for business models
-└── test_routes.py         - test suite for service routes
-```
+**GET** `/products/<id>`
+
+`curl -X GET http://localhost:8080/products/<id>`
+
+### 4. Update a Product
+
+**PUT** `/products/<id>`
+
+`curl -X PUT http://localhost:8080/products/<id> -H "Content-Type: application/json" -d '{"price": 89.99}'`
+
+### 5. Create a Product
+
+**DELETE** `/products/<id>`
+
+`curl -X DELETE http://localhost:8080/products/<id>`
 
 ## License
 

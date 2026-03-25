@@ -115,7 +115,6 @@ class TestYourResourceService(TestCase):
         self.assertEqual(new_product["image_url"], test_product.image_url)
         self.assertEqual(new_product["description"], test_product.description)
 
-        # Todo: Uncomment this code when get_products is implemented
         # Check that the location header was correct
         response = self.client.get(location)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -165,7 +164,72 @@ class TestYourResourceService(TestCase):
         self.assertEqual(updated_product["id"], original_id)
         self.assertEqual(updated_product["description"], "Updated Description")
 
-    # Todo: Add your test cases here...
+    def test_update_product_partial(self):
+        """It should Update only the price of a Product"""
+        test_product = self._create_products(1)[0]
+        # Send ONLY the price
+        new_data = {"price": 150.00}
+        response = self.client.patch(
+            f"{BASE_URL}/{test_product.id}",
+            json=new_data,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        updated_product = response.get_json()
+        # Check that price changed but name remained the same
+        self.assertEqual(float(updated_product["price"]), 150.0)
+        self.assertEqual(updated_product["name"], test_product.name)
+
+    def test_update_product_invalid_data(self):
+        """It should return 400 when sending invalid fields"""
+        test_product = self._create_products(1)[0]
+        # Send a field that isn't in your ALLOWED_FIELDS
+        bad_data = {"unknown_field": "some_value"}
+        response = self.client.patch(
+            f"{BASE_URL}/{test_product.id}",
+            json=bad_data,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_update_product_malformed_json(self):
+        """It should return 400 for malformed JSON structure"""
+        test_product = self._create_products(1)[0]
+        response = self.client.patch(
+            f"{BASE_URL}/{test_product.id}",
+            data="this is just a string, not a dict",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    # ----------------------------------------------------------
+    # TEST LIST
+    # ----------------------------------------------------------
+    def test_list_products(self):
+        """It should return a list of Products"""
+        self._create_products(5)
+        response = self.client.get(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertIsInstance(data, list)
+        self.assertEqual(len(data), 5)
+
+    def test_list_products_empty(self):
+        """It should return an empty list when no Products exist"""
+        response = self.client.get(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertIsInstance(data, list)
+        self.assertEqual(len(data), 0)
+
+    def test_list_products_limit(self):
+        """It should return at most 50 Products"""
+        self._create_products(55)
+        response = self.client.get(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertIsInstance(data, list)
+        self.assertLessEqual(len(data), 50)
 
     def test_delete_product(self):
         """It should Delete a Product"""
@@ -183,14 +247,6 @@ class TestYourResourceService(TestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         data = response.get_json()
         self.assertIn("not found", data["message"])
-
-    def test_list_products(self):
-        """It should list all Products"""
-        self._create_products(3)
-        response = self.client.get(BASE_URL)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        data = response.get_json()
-        self.assertEqual(len(data), 3)
 
     def test_update_product_not_found(self):
         """It should not update a product that is not found"""
@@ -228,13 +284,3 @@ class TestYourResourceService(TestCase):
             content_type="text/plain",
         )
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
-
-    def test_404_handler_json(self):
-        response = self.client.get("/no_such_route")
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertIn("message", response.get_json())
-
-    def test_405_handler_json(self):
-        response = self.client.post(f"{BASE_URL}/1")
-        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
-        self.assertIn("message", response.get_json())

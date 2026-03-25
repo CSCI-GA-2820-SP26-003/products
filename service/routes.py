@@ -97,7 +97,6 @@ def create_products():
     app.logger.info("Product with new id [%s] saved!", product.id)
 
     # Return the location of the new Product
-    # Todo: uncomment this code(just one single line below this) when get_products endpoint is implemented
     location_url = url_for("get_products", product_id=product.id, _external=True)
 
     return (
@@ -131,7 +130,7 @@ def get_products(product_id):
 
 
 ######################################################################
-# UPDATE A NEW PRODUCT
+# UPDATE A NEW PRODUCT PUT AND PATCH
 ######################################################################
 @app.route("/products/<int:product_id>", methods=["PUT"])
 def update_products(product_id):
@@ -159,7 +158,58 @@ def update_products(product_id):
     return jsonify(product.serialize()), status.HTTP_200_OK
 
 
-# Todo: Place your REST API code here ...
+@app.route("/products/<int:product_id>", methods=["PATCH"])
+def patch_products(product_id):
+    """
+    Update a single product
+    Returns 200 if the update is successful
+    Returns 400 if no valid fields are provided for update
+    """
+    app.logger.info("Request to Update a product with id [%s]", product_id)
+
+    # Attempt to find the Product and abort if not found
+    product = Product.find(product_id)
+    if not product:
+        abort(
+            status.HTTP_404_NOT_FOUND, f"Product with id '{product_id}' was not found."
+        )
+
+    # Check data in the request
+    check_content_type("application/json")
+    data = request.get_json()
+    app.logger.info("Processing: %s", data)
+
+    # Update the Product with the data in the request
+    allowed_fields = [
+        "name",
+        "description",
+        "price",
+        "sku",
+        "image_url",
+    ]
+    touched = False
+
+    try:
+        for key, value in data.items():
+            if key in allowed_fields:
+                setattr(product, key, value)
+                touched = True
+            else:
+                app.logger.warning(
+                    "Attempted to update non-existent or protected field: %s", key
+                )
+    except AttributeError:
+        abort(
+            status.HTTP_400_BAD_REQUEST, "Invalid JSON format: Expected a dictionary."
+        )
+
+    if touched:
+        product.update()
+        app.logger.info("Product with id [%s] updated!", product.id)
+        return jsonify(product.serialize()), status.HTTP_200_OK
+    # If nothing is valid in the request it will break the update and return a 400 error
+    app.logger.warning("No valid fields provided for update.")
+    abort(status.HTTP_400_BAD_REQUEST, "No valid fields provided for update.")
 
 
 ######################################################################
@@ -194,21 +244,20 @@ def check_content_type(content_type) -> None:
 ######################################################################
 @app.route("/products", methods=["GET"])
 def list_products():
-    """Returns a list of Products"""
-
-    app.logger.info("Request for product list")
+    """
+    List all Products
+    This endpoint returns a list of products, capped at 50 results
+    """
+    app.logger.info("Request to list Products...")
 
     # Get query parameters
     name = request.args.get("name")
 
     if name:
         app.logger.info("Filtering by name: %s", name)
-        products = Product.find_by_name(name).all()
+        products = Product.find_by_name(name).limit(50).all()
     else:
-        products = Product.all()
-
-    results = [product.serialize() for product in products]
-    return jsonify(results), status.HTTP_200_OK
+        products = Product.query.limit(50).all()
 
 
 ######################################################################
