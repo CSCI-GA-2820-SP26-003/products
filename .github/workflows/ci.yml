@@ -48,6 +48,7 @@ jobs:
 
       - name: Install Python package dependencies
         run: |
+          apt-get update && apt-get install -y git
           python -m pip install -U pip pipenv
           pipenv install --system --dev
 
@@ -65,7 +66,7 @@ jobs:
           pytest --pspec --cov=service --cov-report=xml:coverage.xml
         env:
           DATABASE_URI: "postgresql+psycopg://postgres:pgs3cr3t@postgres:5432/testdb"
-          
+
       - name: Upload Coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
