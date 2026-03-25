@@ -59,3 +59,16 @@ jobs:
           flake8 service tests --count --max-complexity=10 --max-line-length=127 --statistics
           # Run pylint on the service package
           pylint service tests --max-line-length=127
+
+      - name: Run Tests with Coverage
+        run: |
+          pytest --pspec --cov=service --cov-report=xml:coverage.xml
+        env:
+          DATABASE_URI: "postgresql+psycopg://postgres:pgs3cr3t@postgres:5432/testdb"
+          
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
