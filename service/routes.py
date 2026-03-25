@@ -242,9 +242,9 @@ def check_content_type(content_type) -> None:
 
 
 ######################################################################
-# LIST ALL PRODUCTS
+# LIST ALL PRODUCTS WITH QUERY SUPPORT
 ######################################################################
-@app.route("/products", methods=["GET"])
+@app.route("/products", methods=["GET"])  # fixed merge confict with ChatGPT
 def list_products():
     """
     List all Products
@@ -252,7 +252,16 @@ def list_products():
     This endpoint returns a list of products, capped at 50 results
     """
     app.logger.info("Request to list Products...")
-    products = Product.query.limit(50).all()
+
+    # Get query parameters
+    name = request.args.get("name")
+
+    if name:
+        app.logger.info("Filtering by name: %s", name)
+        products = Product.find_by_name(name).limit(50).all()
+    else:
+        products = Product.query.limit(50).all()
+
     results = [product.serialize() for product in products]
     app.logger.info("Returning %d products", len(results))
     return jsonify(results), status.HTTP_200_OK
