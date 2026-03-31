@@ -14,6 +14,7 @@
 # limitations under the License.
 ######################################################################
 
+
 """
 TestProduct API Service Test Suite
 """
@@ -45,7 +46,6 @@ class TestYourResourceService(TestCase):
         """Run once before all tests"""
         app.config["TESTING"] = True
         app.config["DEBUG"] = False
-        # Set up the test database
         app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URI
         app.logger.setLevel(logging.CRITICAL)
         app.app_context().push()
@@ -58,7 +58,7 @@ class TestYourResourceService(TestCase):
     def setUp(self):
         """Runs before each test"""
         self.client = app.test_client()
-        db.session.query(Product).delete()  # clean up the last tests
+        db.session.query(Product).delete()
         db.session.commit()
 
     def tearDown(self):
@@ -84,10 +84,6 @@ class TestYourResourceService(TestCase):
             products.append(test_product)
         return products
 
-    ######################################################################
-    #  P L A C E   T E S T   C A S E S   H E R E
-    ######################################################################
-
     def test_index(self):
         """It should call the home page"""
         resp = self.client.get("/")
@@ -103,11 +99,9 @@ class TestYourResourceService(TestCase):
         response = self.client.post(BASE_URL, json=test_product.serialize())
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        # Make sure location header is set
         location = response.headers.get("Location", None)
         self.assertIsNotNone(location)
 
-        # Check the data is correct
         new_product = response.get_json()
         self.assertEqual(new_product["name"], test_product.name)
         self.assertEqual(new_product["price"], str(test_product.price))
@@ -125,9 +119,24 @@ class TestYourResourceService(TestCase):
         self.assertEqual(new_product["image_url"], test_product.image_url)
         self.assertEqual(new_product["description"], test_product.description)
 
+    def test_create_product_missing_name(self):
+        """It should return 400 when required fields are missing"""
+        response = self.client.post(
+            BASE_URL,
+            json={
+                "sku": "MISSING-001",
+                "description": "No name provided",
+                "price": 10.00,
+                "image_url": "https://example.com/test.png",
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        data = response.get_json()
+        self.assertIn("missing", data["message"])
+
     def test_get_product(self):
         """It should Get a single Product"""
-        # get the id of a product
         test_product = self._create_products(1)[0]
         response = self.client.get(f"{BASE_URL}/{test_product.id}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -144,21 +153,19 @@ class TestYourResourceService(TestCase):
 
     def test_update_product(self):
         """It should Update a single Product"""
-        # get the id of a product
         test_product = self._create_products(1)[0]
         response = self.client.get(f"{BASE_URL}/{test_product.id}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # Modify the data
+
         new_product_data = response.get_json()
-        new_product_data["description"] = "Updated Description"  # Change a field
+        new_product_data["description"] = "Updated Description"
         original_id = new_product_data["id"]
-        # Send the PUT request to update the product
+
         response = self.client.put(
             f"{BASE_URL}/{test_product.id}",
             json=new_product_data,
             content_type="application/json",
         )
-        # Check
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         updated_product = response.get_json()
         self.assertEqual(updated_product["id"], original_id)
@@ -167,7 +174,6 @@ class TestYourResourceService(TestCase):
     def test_update_product_partial(self):
         """It should Update only the price of a Product"""
         test_product = self._create_products(1)[0]
-        # Send ONLY the price
         new_data = {"price": 150.00}
         response = self.client.patch(
             f"{BASE_URL}/{test_product.id}",
@@ -176,14 +182,12 @@ class TestYourResourceService(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         updated_product = response.get_json()
-        # Check that price changed but name remained the same
         self.assertEqual(float(updated_product["price"]), 150.0)
         self.assertEqual(updated_product["name"], test_product.name)
 
     def test_update_product_invalid_data(self):
         """It should return 400 when sending invalid fields"""
         test_product = self._create_products(1)[0]
-        # Send a field that isn't in your ALLOWED_FIELDS
         bad_data = {"unknown_field": "some_value"}
         response = self.client.patch(
             f"{BASE_URL}/{test_product.id}",
@@ -202,9 +206,6 @@ class TestYourResourceService(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    # ----------------------------------------------------------
-    # TEST LIST
-    # ----------------------------------------------------------
     def test_list_products(self):
         """It should return a list of Products"""
         self._create_products(5)
@@ -242,11 +243,19 @@ class TestYourResourceService(TestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_delete_product_not_found(self):
-        """It should not Delete a Product that is not found"""
+        """It should return 204 when deleting a Product that is not found"""
         response = self.client.delete(f"{BASE_URL}/9999")
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        data = response.get_json()
-        self.assertIn("not found", data["message"])
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_delete_product_is_idempotent(self):
+        """It should allow deleting the same Product more than once"""
+        test_product = self._create_products(1)[0]
+
+        response = self.client.delete(f"{BASE_URL}/{test_product.id}")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        response = self.client.delete(f"{BASE_URL}/{test_product.id}")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_update_product_not_found(self):
         """It should not update a product that is not found"""
