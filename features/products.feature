@@ -39,3 +39,19 @@ Scenario: Create a product via UI
     And I set the "Category" to "Writing Instruments"
     And I press the "Create" button
     Then I should see the message "Success"
+
+
+Scenario: Update a product via UI
+    When I visit the "Home Page"
+    And I set the "Name" to "Black BIC Pen"
+    And I press the "Search" button
+    Then I should see the message "Success"
+    And I should see "Black BIC Pen" in the "Name" field
+    When I set the "Name" to "Red BIC Pen"
+    And I set the "Description" to "Red BIC Pen"
+    And I set the "Price" to "0.75"
+    And I press the "Update" button
+    Then I should see the message "Success"
+    And I should see "Red BIC Pen" in the "Name" field
+    And I should see "Red BIC Pen" in the "Description" field
+    And I should see "0.75" in the "Price" field
