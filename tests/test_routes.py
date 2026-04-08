@@ -323,11 +323,13 @@ class TestYourResourceService(TestCase):
 
     def test_purchase_already_sold(self):
         """It should not Purchase a Product that is already unavailable"""
-        # Create a product and purchase it once
         test_product = self._create_products(1)[0]
+        # Initial purchase
         self.client.put(f"{BASE_URL}/{test_product.id}/purchase")
-
-        # Try to purchase it again
+        # Second purchase attempt
         response = self.client.put(f"{BASE_URL}/{test_product.id}/purchase")
         self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
-        self.assertIn("already out of stock", response.get_json()["message"])
+        # Safely get JSON
+        data = response.get_json()
+        self.assertIsNotNone(data, "Response body should not be empty")
+        self.assertIn("already out of stock", data["message"])

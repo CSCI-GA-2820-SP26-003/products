@@ -234,9 +234,15 @@ def purchase_products(product_id):
 
     # Check if the product is already unavailable
     if not product.available:
-        abort(
+        return (
+            jsonify(
+                {
+                    "errors": "Conflict",
+                    "message": f"Product with id '{product_id}' is already out of stock/unavailable.",
+                    "status": status.HTTP_409_CONFLICT,
+                }
+            ),
             status.HTTP_409_CONFLICT,
-            f"Product with id '{product_id}' is already out of stock/unavailable.",
         )
 
     # Perform the state change
