@@ -302,6 +302,12 @@ class TestYourResourceService(TestCase):
         # Create a test product that is available
         test_product = self._create_products(1)[0]
         test_product.available = True
+        test_product.available = True
+
+        # flaky test fixed by Zhen:
+        response = self.client.put(
+            f"{BASE_URL}/{test_product.id}", json=test_product.serialize()
+        )
 
         # Ensure it is actually available before the test
         response = self.client.get(f"{BASE_URL}/{test_product.id}")
