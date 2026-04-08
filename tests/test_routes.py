@@ -293,3 +293,43 @@ class TestYourResourceService(TestCase):
             content_type="text/plain",
         )
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    # ----------------------------------------------------------
+    # TEST PURCHASE (ACTION)
+    # ----------------------------------------------------------
+    def test_purchase_a_product(self):
+        """It should Purchase a Product"""
+        # Create a test product that is available
+        test_product = self._create_products(1)[0]
+        test_product.available = True
+
+        # Ensure it is actually available before the test
+        response = self.client.get(f"{BASE_URL}/{test_product.id}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.get_json()["available"])
+
+        # Perform the purchase action
+        response = self.client.put(f"{BASE_URL}/{test_product.id}/purchase")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Verify the state change
+        data = response.get_json()
+        self.assertFalse(data["available"])
+
+    def test_purchase_not_found(self):
+        """It should not Purchase a Product that is not found"""
+        response = self.client.put(f"{BASE_URL}/0/purchase")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_purchase_already_sold(self):
+        """It should not Purchase a Product that is already unavailable"""
+        test_product = self._create_products(1)[0]
+        # Initial purchase
+        self.client.put(f"{BASE_URL}/{test_product.id}/purchase")
+        # Second purchase attempt
+        response = self.client.put(f"{BASE_URL}/{test_product.id}/purchase")
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        # Safely get JSON
+        data = response.get_json()
+        self.assertIsNotNone(data, "Response body should not be empty")
+        self.assertIn("already out of stock", data["message"])

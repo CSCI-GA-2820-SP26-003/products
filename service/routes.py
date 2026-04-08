@@ -216,6 +216,42 @@ def patch_products(product_id):
     abort(status.HTTP_400_BAD_REQUEST, "No valid fields provided for update.")
 
 
+@app.route("/products/<int:product_id>/purchase", methods=["PUT"])
+def purchase_products(product_id):
+    """
+    Purchase a Product
+
+    This endpoint will perform a state-changing operation on a product
+    outside of standard CRUD by marking it as unavailable.
+    """
+    app.logger.info("Request to Purchase a product with id [%s]", product_id)
+
+    product = Product.find(product_id)
+    if not product:
+        abort(
+            status.HTTP_404_NOT_FOUND, f"Product with id '{product_id}' was not found."
+        )
+
+    # Check if the product is already unavailable
+    if not product.available:
+        return (
+            jsonify(
+                {
+                    "errors": "Conflict",
+                    "message": f"Product with id '{product_id}' is already out of stock/unavailable.",
+                    "status": status.HTTP_409_CONFLICT,
+                }
+            ),
+            status.HTTP_409_CONFLICT,
+        )
+
+    # Perform the state change
+    product.available = False
+    product.update()
+    app.logger.info("Product with id [%s] has been purchased!", product.id)
+    return jsonify(product.serialize()), status.HTTP_200_OK
+
+
 ######################################################################
 #  U T I L I T Y   F U N C T I O N S
 ######################################################################
