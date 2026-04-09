@@ -1,6 +1,3 @@
-
-
-
 Feature: The product service back-end
     As a Developer
     I need a RESTful catalog service
@@ -8,9 +5,8 @@ Feature: The product service back-end
 
 Background:
     Given the following products
-| name                  | sku                       | description                   | price   | category            | available |
-| Black BIC Pen         | PEN-BLK-BIC-001           | Black BIC Pen                 | 0.50    | Writing Instruments | True      |
-
+        | name                  | sku                       | description                   | price   | category            | available |
+        | Black BIC Pen         | PEN-BLK-BIC-001           | Black BIC Pen                 | 0.50    | Writing Instruments | True      |
 
 
 Scenario: The server is running
@@ -24,6 +20,13 @@ Scenario: Read a Product
     And I press the "Search" button
     Then I should see the message "Success"
     And I should see "Black BIC Pen" in the "Name" field
+    And I should see "PEN-BLK-BIC-001" in the "SKU" field
+    And I should see "Black BIC Pen" in the "Description" field
+    And I should see "0.50" in the "Price" field
+    And I should see "Writing Instruments" in the "Category" field
+    And I should see "True" in the "Available" dropdown
+
+
 Scenario: List all products via UI
     When I visit the "Home Page"
     And I press the "Search" button
