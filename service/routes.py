@@ -288,13 +288,13 @@ def list_products():
     List all Products
 
     This endpoint returns a list of products, capped at 50 results.
-    Supports optional query parameters: name, category, inStock.
+    Supports optional query parameters: name, category, available.
     """
     app.logger.info("Request to list Products...")
 
     name = request.args.get("name")
     category = request.args.get("category")
-    in_stock = request.args.get("inStock")
+    available = request.args.get("available")
 
     query = Product.query
 
@@ -306,10 +306,10 @@ def list_products():
         app.logger.info("Filtering by category: %s", category)
         query = query.filter(Product.category.ilike(category))
 
-    if in_stock is not None:
-        app.logger.info("Filtering by inStock: %s", in_stock)
-        available = in_stock.lower() in ("true", "1", "yes")
-        query = query.filter(Product.available == available)
+    if available:
+        app.logger.info("Filtering by available: %s", available)
+        is_available = available.lower() in ("true", "1", "yes")
+        query = query.filter(Product.available == is_available)
 
     products = query.limit(50).all()
     results = [product.serialize() for product in products]
