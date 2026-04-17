@@ -343,6 +343,19 @@ class TestYourResourceService(TestCase):
     # ----------------------------------------------------------
     # TEST LIST FILTERING
     # ----------------------------------------------------------
+    def test_list_products_filter_by_name(self):
+        """It should return only products matching the given name"""
+        product1 = ProductFactory(name="Widget Alpha")
+        product2 = ProductFactory(name="Gadget Beta")
+        self.client.post(BASE_URL, json=product1.serialize())
+        self.client.post(BASE_URL, json=product2.serialize())
+
+        response = self.client.get(f"{BASE_URL}?name=Widget")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 1)
+        self.assertIn("Widget", data[0]["name"])
+
     def test_list_products_filter_by_category(self):
         """It should return only products matching the given category"""
         clothing = ProductFactory(category="Clothing", available=True)
