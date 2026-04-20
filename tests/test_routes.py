@@ -339,3 +339,62 @@ class TestYourResourceService(TestCase):
         data = response.get_json()
         self.assertIsNotNone(data, "Response body should not be empty")
         self.assertIn("already out of stock", data["message"])
+
+    # ----------------------------------------------------------
+    # TEST LIST FILTERING
+    # ----------------------------------------------------------
+    def test_list_products_filter_by_name(self):
+        """It should return only products matching the given name"""
+        product1 = ProductFactory(name="Widget Alpha")
+        product2 = ProductFactory(name="Gadget Beta")
+        self.client.post(BASE_URL, json=product1.serialize())
+        self.client.post(BASE_URL, json=product2.serialize())
+
+        response = self.client.get(f"{BASE_URL}?name=Widget")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 1)
+        self.assertIn("Widget", data[0]["name"])
+
+    def test_list_products_filter_by_category(self):
+        """It should return only products matching the given category"""
+        clothing = ProductFactory(category="Clothing", available=True)
+        electronics = ProductFactory(category="Electronics", available=True)
+        self.client.post(BASE_URL, json=clothing.serialize())
+        self.client.post(BASE_URL, json=electronics.serialize())
+
+        response = self.client.get(f"{BASE_URL}?category=Clothing")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["category"], "Clothing")
+
+    def test_list_products_filter_by_available(self):
+        """It should return only available products when available=true"""
+        available_product = ProductFactory(available=True)
+        unavailable_product = ProductFactory(available=False)
+        self.client.post(BASE_URL, json=available_product.serialize())
+        self.client.post(BASE_URL, json=unavailable_product.serialize())
+
+        response = self.client.get(f"{BASE_URL}?available=true")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertTrue(len(data) >= 1)
+        for product in data:
+            self.assertTrue(product["available"])
+
+    def test_list_products_filter_by_category_and_available(self):
+        """It should filter by both category and available simultaneously"""
+        clothing_available = ProductFactory(category="Clothing", available=True)
+        clothing_unavailable = ProductFactory(category="Clothing", available=False)
+        electronics_available = ProductFactory(category="Electronics", available=True)
+        self.client.post(BASE_URL, json=clothing_available.serialize())
+        self.client.post(BASE_URL, json=clothing_unavailable.serialize())
+        self.client.post(BASE_URL, json=electronics_available.serialize())
+
+        response = self.client.get(f"{BASE_URL}?category=Clothing&available=true")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["category"], "Clothing")
+        self.assertTrue(data[0]["available"])

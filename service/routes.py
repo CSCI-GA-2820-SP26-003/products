@@ -282,24 +282,36 @@ def check_content_type(content_type) -> None:
 ######################################################################
 # LIST ALL PRODUCTS WITH QUERY SUPPORT
 ######################################################################
-@app.route("/products", methods=["GET"])  # fixed merge confict with ChatGPT
+@app.route("/products", methods=["GET"])
 def list_products():
     """
     List all Products
 
-    This endpoint returns a list of products, capped at 50 results
+    This endpoint returns a list of products, capped at 50 results.
+    Supports optional query parameters: name, category, available.
     """
     app.logger.info("Request to list Products...")
 
-    # Get query parameters
     name = request.args.get("name")
+    category = request.args.get("category")
+    available = request.args.get("available")
+
+    query = Product.query
 
     if name:
         app.logger.info("Filtering by name: %s", name)
-        products = Product.find_by_name(name).limit(50).all()
-    else:
-        products = Product.query.limit(50).all()
+        query = query.filter(Product.name.ilike(f"%{name}%"))
 
+    if category:
+        app.logger.info("Filtering by category: %s", category)
+        query = query.filter(Product.category.ilike(category))
+
+    if available:
+        app.logger.info("Filtering by available: %s", available)
+        is_available = available.lower() in ("true", "1", "yes")
+        query = query.filter(Product.available == is_available)
+
+    products = query.limit(50).all()
     results = [product.serialize() for product in products]
     app.logger.info("Returning %d products", len(results))
     return jsonify(results), status.HTTP_200_OK
