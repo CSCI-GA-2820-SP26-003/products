@@ -7,7 +7,7 @@ Background:
     Given the following products
         | name                  | sku                       | description                   | price   | category            | available |
         | Black BIC Pen         | PEN-BLK-BIC-001           | Black BIC Pen                 | 0.50    | Writing Instruments | True      |
-
+        | Red Mug               | MUG-RED-001               | Red Ceramic Mug               | 8.99    | Kitchenware         | True      |
 
 Scenario: The server is running
     When I visit the "Home Page"
@@ -58,3 +58,12 @@ Scenario: Update a product via UI
     And I should see "Red BIC Pen" in the "Name" field
     And I should see "Red BIC Pen" in the "Description" field
     And I should see "0.75" in the "Price" field
+
+
+Scenario: Query products by category via UI
+    When I visit the "Home Page"
+    And I set the "Category" to "Writing Instruments"
+    And I press the "Search" button
+    Then I should see the message "Success"
+    And I should see "Black BIC Pen" in the results
+    And I should not see "Red Mug" in the results

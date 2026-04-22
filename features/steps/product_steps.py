@@ -33,9 +33,10 @@ HTTP_204_NO_CONTENT = 204
 
 WAIT_TIMEOUT = 60
 
-@given('the following products')
+
+@given("the following products")
 def step_impl(context):
-    """ Delete all Products and load new ones """
+    """Delete all Products and load new ones"""
 
     # Get a list all of the products
     rest_endpoint = f"{context.base_url}/products"
@@ -44,18 +45,20 @@ def step_impl(context):
 
     # and delete them one by one
     for product in context.resp.json():
-        context.resp = requests.delete(f"{rest_endpoint}/{product['id']}", timeout=WAIT_TIMEOUT)
+        context.resp = requests.delete(
+            f"{rest_endpoint}/{product['id']}", timeout=WAIT_TIMEOUT
+        )
         expect(context.resp.status_code).equal_to(HTTP_204_NO_CONTENT)
 
     # load the database with new products
     for row in context.table:
         payload = {
-            "name": row['name'],
-            "sku": row['sku'],
-            "description": row['description'],
-            "price": row['price'],
-            "category": row['category'],
-            "available": row['available'] in ['True', 'true', '1']
+            "name": row["name"],
+            "sku": row["sku"],
+            "description": row["description"],
+            "price": row["price"],
+            "category": row["category"],
+            "available": row["available"] in ["True", "true", "1"],
         }
         context.resp = requests.post(rest_endpoint, json=payload, timeout=WAIT_TIMEOUT)
         expect(context.resp.status_code).equal_to(HTTP_201_CREATED)
@@ -92,7 +95,7 @@ def step_impl(context: Any, text: str, element_name: str) -> None:
     element_id = ID_PREFIX + element_name.lower().replace(" ", "_")
     element = Select(context.driver.find_element(By.ID, element_id))
     assert element.first_selected_option.text == text
-    
+
 
 ##################################################################
 # This code works because of the following naming convention:
@@ -117,6 +120,7 @@ def step_impl(context: Any, name: str) -> None:
         )
     )
     assert found
+
 
 @then('I should see the message "{message}"')
 def step_impl(context: Any, message: str) -> None:
@@ -147,3 +151,9 @@ def step_impl(context: Any, text_string: str, element_name: str) -> None:
         )
     )
     assert found
+
+
+@then('I should not see "{name}" in the results')
+def step_impl(context: Any, name: str) -> None:
+    element = context.driver.find_element(By.ID, "search_results")
+    assert name not in element.text
