@@ -291,20 +291,20 @@ class ProductResource(Resource):
         ]
         touched = False
 
-        try:
-            for key, value in data.items():
-                if key in allowed_fields:
-                    setattr(product, key, value)
-                    touched = True
-                else:
-                    app.logger.warning(
-                        "Attempted to update non-existent or protected field: %s", key
-                    )
-        except AttributeError:
+        if not isinstance(data, dict):
             abort(
                 status.HTTP_400_BAD_REQUEST,
                 "Invalid JSON format: Expected a dictionary.",
             )
+
+        for key, value in data.items():
+            if key in allowed_fields:
+                setattr(product, key, value)
+                touched = True
+            else:
+                app.logger.warning(
+                    "Attempted to update non-existent or protected field: %s", key
+                )
 
         if touched:
             product.update()
