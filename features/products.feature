@@ -67,3 +67,15 @@ Scenario: Query products by category via UI
     Then I should see the message "Success"
     And I should see "Black BIC Pen" in the results
     And I should not see "Red Mug" in the results
+
+Scenario: Delete a product via UI
+    When I visit the "Home Page"
+    And I set the "Name" to "Black BIC Pen"
+    And I press the "Search" button
+    Then I should see the message "Success"
+    And I should see "Black BIC Pen" in the "Name" field
+    When I press the "Delete" button
+    Then I should see the message "Product has been Deleted!"
+    When I press the "Search" button
+    Then I should see the message "Success"
+    And I should not see "Black BIC Pen" in the results
