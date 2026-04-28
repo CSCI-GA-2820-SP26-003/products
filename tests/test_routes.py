@@ -427,3 +427,10 @@ class TestYourResourceService(TestCase):
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]["category"], "Clothing")
         self.assertTrue(data[0]["available"])
+
+    def test_health_endpoint(self):
+        """It should return 200 and status OK for health check"""
+        response = self.client.get("/health")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(data["status"], "OK")
