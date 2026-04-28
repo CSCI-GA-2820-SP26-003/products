@@ -226,6 +226,15 @@ class TestYourResourceService(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_patch_product_not_found(self):
+        """It should return 404 when patching a Product that is not found"""
+        response = self.client.patch(
+            f"{BASE_URL}/9999",
+            json={"name": "Test"},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
     def test_list_products(self):
         """It should return a list of Products"""
         self._create_products(5)
