@@ -206,6 +206,16 @@ class TestYourResourceService(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_patch_product_with_json_array(self):
+        """It should return 400 when sending a JSON array instead of object"""
+        test_product = self._create_products(1)[0]
+        response = self.client.patch(
+            f"{BASE_URL}/{test_product.id}",
+            json=["not", "a", "dict"],
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_list_products(self):
         """It should return a list of Products"""
         self._create_products(5)
