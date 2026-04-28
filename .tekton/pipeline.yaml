@@ -56,6 +56,21 @@ spec:
       workspaces:
         - name: output
           workspace: products-pipeline-workspace
+    - name: lint
+      runAfter:
+        - git-clone
+      taskRef:
+        name: pylint
+        kind: Task
+      params:
+        - name: path
+          value: "./service"
+        - name: args
+          value:
+            - --max-line-length=127
+      workspaces:
+        - name: source
+          workspace: products-pipeline-workspace
   workspaces:
     - name: products-pipeline-workspace
   finally: []
