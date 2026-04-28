@@ -101,3 +101,8 @@ remove:	## Stop and remove the buildx builder
 	$(info Stopping and removing the builder image...)
 	docker buildx stop
 	docker buildx rm
+
+.PHONY: cluster
+cluster: ## Create a K3D Kubernetes cluster with load balancer and registry
+	$(info Creating Kubernetes cluster $(CLUSTER) with a registry and 2 worker nodes...)
+	k3d cluster create $(CLUSTER) --agents 2 --registry-create cluster-registry:0.0.0.0:5000 --registry-config ./config/registries.yaml --port '8080:80@loadbalancer'
