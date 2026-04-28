@@ -31,7 +31,7 @@ from .factories import ProductFactory
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
 )
-BASE_URL = "/products"
+BASE_URL = "/api/products"
 
 
 ######################################################################
@@ -205,6 +205,35 @@ class TestYourResourceService(TestCase):
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_patch_product_with_json_array(self):
+        """It should return 400 when sending a JSON array instead of object"""
+        test_product = self._create_products(1)[0]
+        response = self.client.patch(
+            f"{BASE_URL}/{test_product.id}",
+            json=["not", "a", "dict"],
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_patch_product_with_none_body(self):
+        """It should return 400 when JSON body results in None"""
+        test_product = self._create_products(1)[0]
+        response = self.client.patch(
+            f"{BASE_URL}/{test_product.id}",
+            data="null",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_patch_product_not_found(self):
+        """It should return 404 when patching a Product that is not found"""
+        response = self.client.patch(
+            f"{BASE_URL}/9999",
+            json={"name": "Test"},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_list_products(self):
         """It should return a list of Products"""
