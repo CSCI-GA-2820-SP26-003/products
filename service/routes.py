@@ -20,7 +20,7 @@ This service implements a REST API that allows you to Create, Read, Update
 and Delete Product
 """
 
-from flask import request, url_for, abort
+from flask import jsonify, request, url_for, abort
 from flask import current_app as app  # Import Flask application
 from flask_restx import Api, Resource, fields, reqparse, inputs
 from service.models import Product
@@ -108,6 +108,15 @@ product_args.add_argument(
 def index():
     """Base URL for our service"""
     return app.send_static_file("index.html")
+
+
+######################################################################
+# HEALTH CHECK
+######################################################################
+@app.route("/health")
+def health():
+    """Health endpoint for Kubernetes liveness probe"""
+    return jsonify({"status": "OK"}), status.HTTP_200_OK
 
 
 ######################################################################
