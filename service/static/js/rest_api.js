@@ -255,6 +255,11 @@ $(function () {
             table += '</tbody></table>';
             $("#search_results").append(table);
 
+            // copy the first result to the form
+            if (firstProduct != "") {
+                update_form_data(firstProduct)
+            }
+
             flash_message("Success")
         });
 
