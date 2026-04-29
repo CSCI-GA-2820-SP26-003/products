@@ -146,7 +146,7 @@ kind: Task
 metadata:
   name: deploy-image
   labels:
-    app.kubernetes.io/version: "0.1"
+    app.kubernetes.io/version: "0.2"
   annotations:
     tekton.dev/categories: Deployment
     tekton.dev/pipelines.minVersion: "0.17.0"
@@ -154,53 +154,60 @@ metadata:
     tekton.dev/displayName: "deploy image"
     tekton.dev/platforms: "linux/amd64"
 spec:
-  workspaces:
-  - name: source  
   description: >-
-    This task will update the deployment.yaml with the latest image name
-    and then apply that yaml file and it's service file.
+    Applies Kubernetes manifests from the repo, sets the Deployment image via
+    `oc set image`, then waits for rollout. Requires oc + permissions for
+    deployments, pods, replicasets (see README in .tekton/).
+  workspaces:
+    - name: source
   params:
-  - name: image-name
-    description: The fully qualified name of the new image to deploy
-    type: string
-  - name: manifest-dir
-    description: The directory in source that contains yaml manifests
-    type: string
-    default: "k8s"
+    - name: image-name
+      description: The fully qualified name of the new image to deploy
+      type: string
+    - name: manifest-dir
+      description: The directory relative to workspace root that contains yaml manifests
+      type: string
+      default: "k8s"
+    - name: deployment-name
+      description: Name of the Deployment resource to update
+      type: string
+      default: "products"
+    - name: container-name
+      description: Container name within the Deployment pod template to set image on
+      type: string
+      default: "products"
+    - name: app-label-selector
+      description: Label selector passed to kubectl get pods after rollout (ex. app=products)
+      type: string
+      default: "app=products"
+    - name: rollout-timeout
+      description: Passed to oc rollout status --timeout
+      type: string
+      default: "5m"
   steps:
     - name: deploy
       image: quay.io/openshift/origin-cli:latest
-      workingDir: /workspace/source 
-      command: ["/bin/bash", "-c"]
-      args:
-        - |-
-          #!/bin/bash
-          set -e
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
 
-          echo Applying manifests in $(inputs.params.manifest-dir) directory
+        MANIFEST_DIR="$(params.manifest-dir)"
+        echo "Applying manifests under ${PWD}/${MANIFEST_DIR}"
 
-          echo "**********************************************************************"
-          echo "Installing YQ..."
-          echo "**********************************************************************"
-          wget -qO /usr/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-          chmod a+x /usr/bin/yq
+        oc apply -f "${MANIFEST_DIR}/deployment.yaml"
+        oc apply -f "${MANIFEST_DIR}/service.yaml"
 
-          echo "*********************  DEPLOYMENT  ***********************"
-          echo "Deploying $(inputs.params.image-name) ..."
+        echo "Setting image deployment/$(params.deployment-name) container $(params.container-name) -> $(params.image-name)"
+        oc set image "deployment/$(params.deployment-name)" \
+          "$(params.container-name)=$(params.image-name)"
 
-          yq -e -i '.spec.template.spec.containers[0].image="$(inputs.params.image-name)"' $(inputs.params.manifest-dir)/deployment.yaml
-          cat $(inputs.params.manifest-dir)/deployment.yaml
+        echo "Waiting for rollout (timeout $(params.rollout-timeout)) ..."
+        oc rollout status "deployment/$(params.deployment-name)" --timeout="$(params.rollout-timeout)"
 
-          echo "************************************************************"
-          echo "OC APPLY..."
-          oc apply -f $(inputs.params.manifest-dir)/deployment.yaml
-          oc apply -f $(inputs.params.manifest-dir)/service.yaml
-
-          echo "************************************************************"
-          sleep 3
-          echo "Pods:"
-          oc get pods
-          echo ""
+        echo "******* Rollout complete *******"
+        oc get "deployment/$(params.deployment-name)" -o wide
+        oc get pods -l "$(params.app-label-selector)"
 
 ---
 apiVersion: tekton.dev/v1beta1
