@@ -11,6 +11,10 @@ spec:
       description: The reference (branch or ref)
       name: GIT_REF
       type: string
+    - description: Fully qualified image to build/push/deploy (built in build stage, used by deploy)
+      name: IMAGE_NAME
+      type: string
+      default: image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/products:latest
   tasks:
     - name: git-clone
       params:
@@ -86,6 +90,45 @@ spec:
           value: "postgres-creds"
         - name: secret-key
           value: "DATABASE_URI"
+      workspaces:
+        - name: source
+          workspace: products-pipeline-workspace
+    - name: build
+      runAfter:
+        - lint
+        - tests
+      taskRef:
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: buildah
+          - name: namespace
+            value: openshift-pipelines
+        resolver: cluster
+      params:
+        - name: IMAGE
+          value: $(params.IMAGE_NAME)
+        - name: DOCKERFILE
+          value: ./Dockerfile
+        - name: CONTEXT
+          value: .
+        - name: TLSVERIFY
+          value: "false"
+        - name: STORAGE_DRIVER
+          value: vfs
+      workspaces:
+        - name: source
+          workspace: products-pipeline-workspace
+    - name: deploy
+      runAfter:
+        - build
+      taskRef:
+        name: deploy-image
+        kind: Task
+      params:
+        - name: image-name
+          value: $(params.IMAGE_NAME)
       workspaces:
         - name: source
           workspace: products-pipeline-workspace
