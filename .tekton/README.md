@@ -2,7 +2,7 @@
 
 ## Pipelines
 
-- `products-cd-pipeline` (`pipeline.yaml`) — clone, lint, test, build (buildah), deploy (`deploy-image` task).
+- `products-cd-pipeline` ([`pipeline.yaml`](pipeline.yaml)) — clone, lint, test, build (buildah), deploy (`deploy-image` task).
 
 ## Deploy task (`deploy-image`)
 
@@ -22,6 +22,6 @@ The `PipelineRun` must use a ServiceAccount (e.g. `pipeline`) whose role allows 
 
 If `oc rollout status` or `oc set image` returns `Forbidden`, ask your cluster admin to grant the above to the pipeline SA in the target namespace.
 
-## Webhook / trigger alignment (deferred)
+## Webhook / TriggerTemplate
 
-[`.tekton/events/trigger_template.yaml`](events/trigger_template.yaml) references `pipelineRef.name: cd-pipeline` and workspace `pipeline-workspace`, while this repo’s Pipeline is named `products-cd-pipeline` and uses `products-pipeline-workspace`. Until those are aligned (and the PVC name matches), webhook-created `PipelineRuns` may fail to resolve the pipeline or bind workspaces. Manual `tkn pipeline start` works when parameters and workspaces are supplied explicitly.
+[`events/trigger_template.yaml`](events/trigger_template.yaml) creates a `PipelineRun` that references **`products-cd-pipeline`**, binds workspace **`products-pipeline-workspace`** to PersistentVolumeClaim **`pipeline-pvc`** ([`workspace.yaml`](workspace.yaml)), and passes **`GIT_REPO`**, **`GIT_REF`** (push commit SHA), and **`IMAGE_NAME`** to match [`pipeline.yaml`](pipeline.yaml).
