@@ -4,7 +4,8 @@ metadata:
   name: products-cd-pipeline
 spec:
   params:
-    - description: The URL to the git repo
+    - default: "https://github.com/CSCI-GA-2820-SP26-003/products.git"
+      description: The URL to the git repo
       name: GIT_REPO
       type: string
     - default: master
@@ -15,6 +16,10 @@ spec:
       name: IMAGE_NAME
       type: string
       default: image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/products:latest
+    - description: The base URL of the deployed application for BDD tests
+      name: APP_URL
+      type: string
+      default: http://products.pjfarrell-dev.svc.cluster.local:8080
   tasks:
     - name: git-clone
       params:
@@ -129,6 +134,22 @@ spec:
       params:
         - name: image-name
           value: $(params.IMAGE_NAME)
+      workspaces:
+        - name: source
+          workspace: products-pipeline-workspace
+    - name: behave
+      runAfter:
+        - deploy
+      taskRef:
+        name: behave
+        kind: Task
+      params:
+        - name: base-url
+          value: $(params.APP_URL)
+        - name: wait-seconds
+          value: "60"
+        - name: driver
+          value: chrome
       workspaces:
         - name: source
           workspace: products-pipeline-workspace
