@@ -30,4 +30,4 @@ spec:
         workspaces:
           - name: products-pipeline-workspace
             persistentVolumeClaim:
-              claimName: pipeline-pvc
+              claimName: products-pipeline-pvc
